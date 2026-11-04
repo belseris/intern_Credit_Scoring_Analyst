@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+outputs/
+
+# ข้อมูลไม่เข้า git: ไฟล์ใหญ่, ยังไม่ยืนยัน licence และ sample_data_intw.csv มีเบอร์โทร (msisdn)
+# วิธีได้ข้อมูลมาอยู่ใน README.md
+data/
