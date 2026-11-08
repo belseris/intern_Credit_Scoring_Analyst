@@ -1,10 +1,10 @@
 # Data dictionary: telecom micro-credit data (Indonesia)
 
 Author: Ratthapak Sinsiri (Bell)
-Date: 2026-11-04
+Date: 2026-11-04 (updated 2026-11-05 with T05 findings: Q3 and Q10 recount, new Q12)
 Status: draft for mentor review
 
-Every number in this document comes from [`notebooks/t03_profile_telecom.ipynb`](../notebooks/t03_profile_telecom.ipynb). Section numbers in brackets, e.g. (nb 2.3), point to the notebook section.
+Every number in this document comes from [`notebooks/t03_profile_telecom.ipynb`](../notebooks/t03_profile_telecom.ipynb), except those marked (T05), which come from [`features/telecom.py`](../features/telecom.py). Section numbers in brackets, e.g. (nb 2.3), point to the notebook section.
 
 ## 1. Source and file check
 
@@ -85,15 +85,16 @@ The whole-file rate of 12.48% matches the "about 12.5%" quoted for this dataset.
 |---|---|---|---|---|
 | Q1 | **Immature target**: August has no bads | `pdate`, `label` | 40,674 rows | Exclude from development. Can be used as an unlabelled sample for stability checks |
 | Q2 | **No-loan rows** labelled good | `cnt_loans30`, `label` | 3,259 rows | Exclude from development |
-| Q3 | **Corrupted values**: random decimals far outside the normal range, e.g. `aon` = 999,860 days (nb 2.6) | 9 columns, see section 4 | About 1,047 per column; 10,231 rows have at least one | Set to missing, then impute or flag |
+| Q3 | **Corrupted values**: random decimals far outside the normal range, e.g. `aon` = 999,860 days (nb 2.6) | 9 columns, see section 4 | About 1,047 per column; 10,232 rows have at least one. One of them is a whole number, `last_rech_date_ma` = 835,720 days, found in T05 | Set to missing, then impute or flag |
 | Q4 | **Negative values** where negatives are impossible (nb 2.5) | `aon`, `daily_decr30/90`, `last_rech_date_ma/da` | 14 to 1,839 rows per column | Set to missing |
 | Q5 | **Negative values** that may be real (balance in debit) | `rental30/90`, `medianmarechprebal30/90` | 1,646 to 5,929 rows per column | Keep. Confirm meaning with the data owner |
 | Q6 | **Repeat customers** (nb 2.5) | `msisdn` | 19,756 customers have more than one row (23,350 extra rows); 591 have both labels | Split train/test **by `msisdn`** so one customer is never in both |
 | Q7 | **Values do not match the description** | `medianamnt_loans30/90` | Values are only 0, 0.5, 1, 1.5, 2, 3. A median loan should be 6 or 12 | Do not use until the meaning is known |
 | Q8 | **Loan amounts stored as repayment** | `maxamnt_loans30/90` | Values are 0/6/12, not 5/10 as described | None. Note only |
 | Q9 | **Constant column** | `pcircle` | One value (`UPW`) | Drop |
-| Q10 | **Last top-up over 90 days ago** in 90-day data (nb 2.7) | `last_rech_date_ma/da` | 48 and 345 rows | Keep. May be real inactive customers |
+| Q10 | **Last top-up over 90 days ago** in 90-day data (nb 2.7) | `last_rech_date_ma/da` | 47 and 345 rows (91 to 115 days). A 48th `last_rech_date_ma` value is 835,720 days and is counted in Q3 (T05) | Keep. May be real inactive customers |
 | Q11 | Fully duplicated row | all | 1 row | Drop |
+| Q12 | **Zero means "no top-up"**, not a real zero (T05) | `last_rech_date_ma`, `medianmarechprebal30/90` | No top-up in 90 days: 20,950 rows, 20,729 (98.9%) have `last_rech_date_ma` = 0 and all have `medianmarechprebal90` = 0. No top-up in 30 days: 27,979 rows, 27,821 (99.4%) have `medianmarechprebal30` = 0 | Set to missing when there was no top-up in the window. Otherwise 0 days reads as "topped up today" and 0 balance as "ran out" |
 
 Consistency checks that passed (nb 2.7): 30-day counts and amounts never exceed 90-day ones, `amnt_loans30/90` are always multiples of 6, `maxamnt_loans90` is always 0/6/12.
 
@@ -112,19 +113,19 @@ Median is over the whole file and is shown to give a sense of typical values.
 | 5 | `daily_decr90` | Average daily spend from main account, last 90 days | float | IDR | 1,500 | Q4 (1,839) | Clean |
 | 6 | `rental30` | Average main account balance, last 30 days | float | IDR | 1,084 | Q5 (5,628); owner unsure of definition | Review |
 | 7 | `rental90` | Average main account balance, last 90 days | float | IDR | 1,334 | Q5 (5,929); owner unsure of definition | Review |
-| 8 | `last_rech_date_ma` | Days since last main account top-up | float | days | 3 | Q3 (1,046), Q4 (1,315), Q10 (48) | Clean |
+| 8 | `last_rech_date_ma` | Days since last main account top-up | float | days | 3 | Q3 (1,047), Q4 (1,315), Q10 (47), Q12 | Clean |
 | 9 | `last_rech_date_da` | Days since last data account top-up | float | days | 0 | Q3 (1,047), Q4 (14), Q10 (345) | Clean |
 | 10 | `last_rech_amt_ma` | Amount of last main account top-up | int | IDR | 1,539 | – | Use |
 | 11 | `cnt_ma_rech30` | Number of main account top-ups, last 30 days | int | count | 3 | – | Use |
 | 12 | `fr_ma_rech30` | Frequency of main account top-ups, last 30 days | float | – | 2 | Q3 (1,047); owner unsure of definition | Review |
 | 13 | `sumamnt_ma_rech30` | Total main account top-ups, last 30 days | float | IDR | 4,628 | – | Use |
 | 14 | `medianamnt_ma_rech30` | Median top-up amount, main account, last 30 days | float | IDR | 1,539 | – | Use |
-| 15 | `medianmarechprebal30` | Median main account balance just before top-up, last 30 days | float | IDR | 34 | Q3 (1,047), Q5 (1,646) | Clean |
+| 15 | `medianmarechprebal30` | Median main account balance just before top-up, last 30 days | float | IDR | 34 | Q3 (1,047), Q5 (1,646), Q12 | Clean |
 | 16 | `cnt_ma_rech90` | Number of main account top-ups, last 90 days | int | count | 4 | – | Use |
 | 17 | `fr_ma_rech90` | Frequency of main account top-ups, last 90 days | int | – | 2 | Owner unsure of definition | Review |
 | 18 | `sumamnt_ma_rech90` | Total main account top-ups, last 90 days | int | IDR | 7,226 | – | Use |
 | 19 | `medianamnt_ma_rech90` | Median top-up amount, main account, last 90 days | float | IDR | 1,539 | – | Use |
-| 20 | `medianmarechprebal90` | Median main account balance just before top-up, last 90 days | float | IDR | 36 | Q5 (1,730) | Use |
+| 20 | `medianmarechprebal90` | Median main account balance just before top-up, last 90 days | float | IDR | 36 | Q5 (1,730), Q12 | Clean |
 | 21 | `cnt_da_rech30` | Number of data account top-ups, last 30 days | float | count | 0 | Q3 (1,047); 98% zero | Clean |
 | 22 | `fr_da_rech30` | Frequency of data account top-ups, last 30 days | float | – | 0 | Q3 (1,047); 99% zero | Clean |
 | 23 | `cnt_da_rech90` | Number of data account top-ups, last 90 days | int | count | 0 | 97% zero | Use |
