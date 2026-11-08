@@ -11,5 +11,5 @@ from features.telecom import build_features
 raw = pd.read_csv(ROOT / "data" / "sample_data_intw.csv")
 feats = build_features(raw)
 
-print(feats.shape)        # (209593, 18) คือ 209,593 แถว 18 feature
+print(feats.shape)        # (209593, 10) คือ 209,593 แถว 10 feature
 print(feats.head())
